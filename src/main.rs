@@ -121,6 +121,30 @@ fn draw_object(
     let mut ndc_vertices: Vec<Vec2> = vec![];
     let mut normals: Vec<Vec3> = vec![];
 
+    // draw gizmo
+    let gizmo_length = 1.0;
+    let gizmo_color = Color::new(1.0, 1.0, 1.0, 1.0);
+    let gizmo_origin = Vec3::new(0.0, 0.0, 0.0);
+    let gizmo_x = Vec3::new(gizmo_length, 0.0, 0.0);
+    let gizmo_y = Vec3::new(0.0, gizmo_length, 0.0);
+    let gizmo_z = Vec3::new(0.0, 0.0, gizmo_length);
+
+    let gizmo_origin = mvp_mat * Vec4::new(gizmo_origin.x, gizmo_origin.y, gizmo_origin.z, 1.0);
+    let gizmo_x = mvp_mat * Vec4::new(gizmo_x.x, gizmo_x.y, gizmo_x.z, 1.0);
+    let gizmo_y = mvp_mat * Vec4::new(gizmo_y.x, gizmo_y.y, gizmo_y.z, 1.0);
+    let gizmo_z = mvp_mat * Vec4::new(gizmo_z.x, gizmo_z.y, gizmo_z.z, 1.0);
+
+    let gizmo_origin = ndc_to_screen_space(vec2(
+        gizmo_origin.x / gizmo_origin.w,
+        gizmo_origin.y / gizmo_origin.w,
+    ));
+
+    let gizmo_x = ndc_to_screen_space(vec2(gizmo_x.x / gizmo_x.w, gizmo_x.y / gizmo_x.w));
+
+    let gizmo_y = ndc_to_screen_space(vec2(gizmo_y.x / gizmo_y.w, gizmo_y.y / gizmo_y.w));
+
+    let gizmo_z = ndc_to_screen_space(vec2(gizmo_z.x / gizmo_z.w, gizmo_z.y / gizmo_z.w));
+
     for vertex in &object.vertices {
         let transformed_vertex = mvp_mat * Vec4::new(vertex.x, vertex.y, vertex.z, 1.0);
         transformed_vertices.push(transformed_vertex);
@@ -174,6 +198,32 @@ fn draw_object(
             fill_triangle(screen_a, screen_b, screen_c, shaded_color);
             //draw_wireframe_edges(screen_a, screen_b, screen_c);
         }
+
+        draw_line(
+            gizmo_origin.x,
+            gizmo_origin.y,
+            gizmo_x.x,
+            gizmo_x.y,
+            2.0,
+            RED,
+        );
+        draw_line(
+            gizmo_origin.x,
+            gizmo_origin.y,
+            gizmo_y.x,
+            gizmo_y.y,
+            2.0,
+            GREEN,
+        );
+
+        draw_line(
+            gizmo_origin.x,
+            gizmo_origin.y,
+            gizmo_z.x,
+            gizmo_z.y,
+            2.0,
+            BLUE,
+        );
     }
 }
 
@@ -202,6 +252,8 @@ fn fill_triangle(a: Vec2, b: Vec2, c: Vec2, color: Color) {
     let c = macroquad::math::Vec2::new(c.x, c.y);
     draw_triangle(a, b, c, color);
 }
+
+// gizmo that shows the orientation of the camera
 
 #[macroquad::main("Renderer")]
 async fn main() {
@@ -330,6 +382,8 @@ async fn main() {
                 camera_target = camera_pos + front;
             }
         }
+
+        // for each object, draw a gizmo that shows the orientation of the object
 
         last_mouse_pos = mouse_position();
 
