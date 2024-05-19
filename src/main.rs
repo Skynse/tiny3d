@@ -35,9 +35,7 @@ fn rotateZ(angle: f32) -> Mat4 {
 }
 
 #[macroquad::main("Renderer")]
-
 async fn main() {
-    // Cube vertices
     let mut angle = 0.0;
     let vertices = vec![
         vec3(-0.5, -0.5, -0.5), // 0
@@ -55,7 +53,6 @@ async fn main() {
     let mut z_near = 0.01;
     let mut z_far = 100.0;
 
-    // Perspective projection matrix
     let proj_mat = Mat4::perspective_rh(fov_y.to_radians(), aspect_ratio, z_near, z_far);
     let mut yaw = 0.0;
     let mut pitch = 0.0;
@@ -65,35 +62,20 @@ async fn main() {
     let mut last_mouse_pos = mouse_position();
 
     let mut cursor_center = vec3(0.0, 0.0, 0.0);
-    // Main loop
+
     loop {
         clear_background(BLACK);
-        // left mouse button rotate camera
-
-        // update camera
-
-        // Update aspect ratio in case the window is resized
         aspect_ratio = screen_width() / screen_height();
         let proj_mat = Mat4::perspective_rh(fov_y.to_radians(), aspect_ratio, z_near, z_far);
-
-        // View matrix
         let view_mat = Mat4::look_at_rh(camera_pos, camera_target, camera_up);
-
-        // Model matrix
         let model_mat = Mat4::IDENTITY;
-
-        // Model View Projection matrix
         let mvp_mat = proj_mat * view_mat * model_mat;
 
-        // Transform vertices
         let mut cube_vertices = vec![];
-
-        // rotate the cube
         let rotation_matrix = rotateY(angle) * rotateX(angle);
 
         for vertex in vertices.iter() {
-            let transformed_vertex =
-                mvp_mat * rotation_matrix * Vec4::new(vertex.x, vertex.y, vertex.z, 1.0);
+            let transformed_vertex = mvp_mat * Vec4::new(vertex.x, vertex.y, vertex.z, 1.0);
 
             cube_vertices.push(vec2(
                 transformed_vertex.x / transformed_vertex.w,
@@ -101,7 +83,6 @@ async fn main() {
             ));
         }
 
-        // Draw vertices as dots
         for vertex in cube_vertices.iter() {
             draw_circle(
                 vertex.x * screen_width() / 2.0 + screen_width() / 2.0,
@@ -111,7 +92,6 @@ async fn main() {
             );
         }
 
-        // Draw lines
         let indices = vec![
             0, 1, 2, 2, 3, 0, // front
             1, 5, 6, 6, 2, 1, // right
@@ -161,19 +141,12 @@ async fn main() {
             WHITE,
         );
 
-        // cube transform information
         draw_text(&format!("Yaw: {:.2}", yaw), 10.0, 40.0, 20.0, WHITE);
-
         draw_text(&format!("Pitch: {:.2}", pitch), 10.0, 60.0, 20.0, WHITE);
-
         draw_text(&format!("Fov: {:.2}", fov_y), 10.0, 80.0, 20.0, WHITE);
-
-        // triangle faces
 
         angle += 0.5;
         angle %= 360.0;
-
-        // scroll to zoom
 
         let (mouse_x, mouse_y) = mouse_wheel();
         if mouse_y > 0.0 {
@@ -183,7 +156,6 @@ async fn main() {
         }
 
         if is_mouse_button_down(MouseButton::Middle) {
-            // if shift, translate camera in 2d
             if is_key_down(KeyCode::LeftShift) {
                 let (x, y) = mouse_position();
                 let (last_x, last_y) = last_mouse_pos;
@@ -194,8 +166,10 @@ async fn main() {
                 let right = forward.cross(camera_up).normalize();
                 let up = right.cross(forward).normalize();
 
-                camera_pos += right * dx * 0.01;
-                camera_pos += up * dy * 0.01;
+                camera_pos -= right * dx * 0.01;
+                camera_pos -= up * dy * 0.01;
+                camera_target -= right * dx * 0.01;
+                camera_target -= up * dy * 0.01;
             } else {
                 let (x, y) = mouse_position();
                 let (last_x, last_y) = last_mouse_pos;
@@ -224,7 +198,6 @@ async fn main() {
             }
         }
 
-        // arrow keys to change cursor center
         if is_key_down(KeyCode::Left) {
             cursor_center.x -= 0.1;
         }
@@ -240,11 +213,9 @@ async fn main() {
 
         last_mouse_pos = mouse_position();
 
-        // project cursor center to 3d
         let cursor_center =
             mvp_mat * Vec4::new(cursor_center.x, cursor_center.y, cursor_center.z, 1.0);
 
-        // draw cursor center
         draw_circle_lines(
             cursor_center.x / cursor_center.w * screen_width() / 2.0 + screen_width() / 2.0,
             cursor_center.y / cursor_center.w * -screen_height() / 2.0 + screen_height() / 2.0,
@@ -259,7 +230,6 @@ async fn main() {
             None,
             Color::new(1.0, 0.0, 0.0, 1.0),
         );
-        // Camera rotation
 
         next_frame().await
     }
