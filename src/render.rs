@@ -26,14 +26,7 @@ pub async fn run() {
     ];
 
     let mut objects = vec![
-        Object3D {
-            vertices: vertices.clone(),
-            indices: indices.clone(),
-            normals: vec![],
-            position: vec3(0.0, 0.0, 0.0),
-            rotation: vec3(0.0, 0.0, 0.0),
-            scale: vec3(1.0, 1.0, 1.0),
-        },
+
         //Object3D::from_obj("/home/skynse/projects/tiny3d/assets/Car.obj"),
     ];
 
@@ -51,27 +44,26 @@ pub async fn run() {
     let camera_up = vec3(0.0, 1.0, 0.0);
     let mut last_mouse_pos = mouse_position();
     let mut light_dir = vec3(0.0, 0.0, 1.0).normalize();
-    let mut iron_man = Object3D::from_obj(r"assets/Car.obj");
+    let mut iron_man = Object3D::from_obj(r"assets/12140_Skull_v3_L2.obj   ");
+
+    iron_man.scale *= 0.01;
+    iron_man.rotation.x = 90.0;
 
     objects.push(iron_man);
-
-    let mut sphere = generate_sphere(1.0, 50, 50);
-    sphere.position.x -= 5.0;
-    objects.push(sphere);
 
     for object in &mut objects {
         compute_vertex_normals(object);
     }
 
     loop {
-        clear_background(DARKGRAY);
+        clear_background(BLACK);
         aspect_ratio = screen_width() / screen_height();
         let proj_mat = Mat4::perspective_rh(fov_y.to_radians(), aspect_ratio, z_near, z_far);
         let view_mat = Mat4::look_at_rh(camera_pos, camera_target, camera_up);
 
         for object in &mut objects {
             let dist: f32 = object.position.distance(camera_pos);
-            if dist > 30.0 {
+            if dist > 100.0 {
                 continue;
             }
             object.rotation.y += 0.5 * paused as i32 as f32; // Rotate object
@@ -218,7 +210,7 @@ fn draw_object(
 
     // Phong shading parameters
     let ambient_strength = 0.1;
-    let light_color = vec3(1.0, 1.5, 1.0);
+    let light_color = vec3(1.0, 1.0, 1.0);
     let object_color = vec3(1.0, 1.0, 1.0);
     let specular_strength = 0.5;
     let shininess = 32.0;

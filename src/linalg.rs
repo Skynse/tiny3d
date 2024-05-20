@@ -68,61 +68,11 @@ pub fn calculate_normal(v0: Vec3, v1: Vec3, v2: Vec3) -> Vec3 {
 }
 
 pub fn fill_triangle(a: Vec2, mut b: Vec2, mut c: Vec2, color: Color) {
-    // smooth shading
-    let mut a = a;
-    let mut b = b;
-    let mut c = c;
+    let a_macroquad = macroquad::math::vec2(a.x, a.y);
+    let b_macroquad = macroquad::math::vec2(b.x, b.y);
+    let c_macroquad = macroquad::math::vec2(c.x, c.y);
 
-    if a.y > b.y {
-        std::mem::swap(&mut a, &mut b);
-    }
-    if a.y > c.y {
-        std::mem::swap(&mut a, &mut c);
-    }
-    if b.y > c.y {
-        std::mem::swap(&mut b, &mut c);
-    }
-
-    let total_height = c.y - a.y;
-
-    for i in 0..total_height as i32 {
-        let second_half = i > b.y as i32 - a.y as i32 || b.y == a.y;
-        let segment_height = if second_half { c.y - b.y } else { b.y - a.y };
-
-        let alpha = i as f32 / total_height;
-        let beta = if second_half {
-            (i - b.y as i32) as f32 / segment_height
-        } else {
-            (i - a.y as i32) as f32 / segment_height
-        };
-
-        let mut a = a + (c - a) * alpha;
-        let mut b = if second_half {
-            b + (c - b) * beta
-        } else {
-            a + (b - a) * beta
-        };
-
-        if a.x > b.x {
-            std::mem::swap(&mut a, &mut b);
-        }
-
-        for j in a.x as i32..b.x as i32 {
-            let phi = if b.x - a.x > 0.0 {
-                (j as f32 - a.x) / (b.x - a.x)
-            } else {
-                1.0
-            };
-
-            let p = a + (b - a) * phi;
-            let idx = (p.x as i32 + p.y as i32 * screen_width() as i32) as usize;
-            if idx < screen_width() as usize * screen_height() as usize {
-                let mut color = color;
-                color.a = 255.0;
-                draw_pixel(j, i, color);
-            }
-        }
-    }
+    draw_triangle(a_macroquad, b_macroquad, c_macroquad, color);
 }
 
 fn draw_pixel(x: i32, y: i32, color: Color) {
