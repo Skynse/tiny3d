@@ -1,5 +1,5 @@
 extern crate glam;
-use glam::{vec2, vec3, vec4, Mat4, Vec2, Vec3, Vec4, Vec4Swizzles};
+use glam::{vec2, vec3, vec4, FloatExt, Mat4, Vec2, Vec3, Vec4, Vec4Swizzles};
 use macroquad::{prelude::*, time};
 use std::vec;
 
@@ -44,6 +44,20 @@ fn rotate_y(angle: f32) -> Mat4 {
         vec4(-angle.sin(), 0.0, angle.cos(), 0.0),
         vec4(0.0, 0.0, 0.0, 1.0),
     )
+}
+
+fn custom_rand(start: usize, end: usize) -> usize {
+    let datetime = crate::miniquad::date::now();
+    let seed = datetime as usize;
+
+    let mut x = seed;
+
+    x ^= x << 13;
+
+    x ^= x >> 17;
+    x ^= x << 5;
+
+    x % (end - start) + start
 }
 
 fn generate_torus(
@@ -193,6 +207,7 @@ fn draw_object(
             }
 
             let intensity = normal_view.dot(light_dir).max(0.0);
+
             let shaded_color = Color::new(intensity, intensity, intensity, 1.0);
 
             fill_triangle(screen_a, screen_b, screen_c, shaded_color);
@@ -308,6 +323,8 @@ async fn main() {
     let mut z_near = 0.01;
     let mut z_far = 100.0;
 
+    let mut paused = true;
+
     let mut yaw = -90.0;
     let mut pitch = 0.0;
     let mut camera_pos = vec3(0.0, 0.0, 5.0);
@@ -315,6 +332,20 @@ async fn main() {
     let camera_up = vec3(0.0, 1.0, 0.0);
     let mut last_mouse_pos = mouse_position();
     let mut light_dir = vec3(0.0, 0.0, 1.0).normalize();
+    let mut iron_man =
+        Object3D::from_obj(r"C:\Users\austi\projects\tiny3d\assets\stanford-bunny.obj");
+
+    // scale 100 times down
+    let scale = 10.;
+
+    for vertex in &mut iron_man.vertices {
+        vertex.x *= scale;
+        vertex.y *= scale;
+        vertex.z *= scale;
+    }
+
+    objects.push(iron_man);
+
     loop {
         clear_background(BLACK);
         aspect_ratio = screen_width() / screen_height();
@@ -322,7 +353,8 @@ async fn main() {
         let view_mat = Mat4::look_at_rh(camera_pos, camera_target, camera_up);
 
         for object in &mut objects {
-            object.rotation.y += 0.5; // Rotate object
+            object.rotation.y += 0.5 * paused as i32 as f32; // Rotate object
+
             draw_object(object, proj_mat, view_mat, camera_pos, light_dir);
         }
 
@@ -339,10 +371,46 @@ async fn main() {
         draw_text(&format!("Fov: {:.2}", fov_y), 10.0, 80.0, 20.0, WHITE);
 
         let (mouse_x, mouse_y) = mouse_wheel();
-        if mouse_y > 0.0 {
-            fov_y -= 10.0;
-        } else if mouse_y < 0.0 {
-            fov_y += 10.0;
+
+        fov_y -= mouse_y * 0.1;
+        fov_y = fov_y.clamp(1.0, 90.0);
+
+        if is_key_down(KeyCode::W) {
+            camera_pos += (camera_target - camera_pos).normalize() * 0.1;
+            camera_target += (camera_target - camera_pos).normalize() * 0.1;
+        }
+
+        if is_key_down(KeyCode::S) {
+            camera_pos -= (camera_target - camera_pos).normalize() * 0.1;
+            camera_target -= (camera_target - camera_pos).normalize() * 0.1;
+        }
+
+        if is_key_down(KeyCode::A) {
+            let forward = (camera_target - camera_pos).normalize();
+            let right = forward.cross(camera_up).normalize();
+            camera_pos -= right * 0.1;
+            camera_target -= right * 0.1;
+        }
+
+        if is_key_down(KeyCode::D) {
+            let forward = (camera_target - camera_pos).normalize();
+            let right = forward.cross(camera_up).normalize();
+            camera_pos += right * 0.1;
+            camera_target += right * 0.1;
+        }
+
+        if is_key_down(KeyCode::Q) {
+            camera_pos += camera_up * 0.1;
+            camera_target += camera_up * 0.1;
+        }
+
+        if is_key_down(KeyCode::E) {
+            camera_pos -= camera_up * 0.1;
+            camera_target -= camera_up * 0.1;
+        }
+
+        if is_key_pressed(KeyCode::Space) {
+            paused = !paused;
         }
 
         if is_mouse_button_down(MouseButton::Left) {
@@ -366,8 +434,8 @@ async fn main() {
                 let dx = x - last_x;
                 let dy = y - last_y;
 
-                yaw -= dx * 0.1;
-                pitch += dy * 0.1;
+                yaw += dx * 0.1;
+                pitch -= dy * 0.1;
 
                 pitch = pitch.clamp(-89.0, 89.0);
 
@@ -389,4 +457,8 @@ async fn main() {
 
         next_frame().await
     }
+}
+
+fn float_lerp(lhs: f32, rhs: f32, s: f32) -> f32 {
+    lhs + (rhs - lhs) * s
 }

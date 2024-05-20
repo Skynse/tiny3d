@@ -2,6 +2,7 @@ use std::path;
 
 use glam::{vec2, vec4, Mat4, Vec2, Vec3, Vec4};
 
+#[derive(Debug, Clone)]
 pub struct Object3D {
     pub vertices: Vec<Vec3>,
     pub indices: Vec<usize>,
